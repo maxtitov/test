@@ -2,10 +2,10 @@ export const checkWinner = (board: ("X" | "O" | null)[][], player: "X" | "O") =>
   const size = board.length;
 
   const directions = [
-    [0, 1],  // горизонталь
-    [1, 0],  // вертикаль
-    [1, 1],  // диагональ вниз
-    [1, -1], // диагональ вверх
+    [0, 1],
+    [1, 0],
+    [1, 1],
+    [1, -1],
   ];
 
   for (let i = 0; i < size; i++) {

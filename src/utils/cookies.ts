@@ -17,8 +17,7 @@ export const saveHighScore = (moves: number) => {
   const newScore: Score = { moves, date: new Date().toISOString() };
   scores.push(newScore);
 
-  // Сортировка: по количеству ходов asc, затем по дате desc (более поздние ниже)
-  scores.sort((a, b) => a.moves - b.moves || new Date(a.date).getTime() - new Date(b.date).getTime());
+    scores.sort((a, b) => a.moves - b.moves || new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const newScores = scores.slice(0, 10);
   Cookies.set(COOKIE_KEY, JSON.stringify(newScores), { expires: 365 });

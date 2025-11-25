@@ -1,4 +1,3 @@
-// src/components/TicTacToe.tsx
 import React, { useState, useEffect } from "react";
 import Board from "./Board";
 import { checkWinner } from "../utils/checkWinner";
@@ -15,16 +14,14 @@ const TicTacToe: React.FC = () => {
   const [moves, setMoves] = useState(0);
   const [gameCount, setGameCount] = useState(1);
 
-  // Определяем, кто начинает новую игру
   useEffect(() => {
     if (gameCount % 2 === 0) {
-      setTurn("O"); // компьютер начинает
+      setTurn("O");
     } else {
-      setTurn("X"); // игрок начинает
+      setTurn("X");
     }
   }, [gameCount]);
 
-  // Ход компьютера
   useEffect(() => {
     if (turn === "O") {
       const [i, j] = computerMove(board);
@@ -38,7 +35,6 @@ const TicTacToe: React.FC = () => {
     }
   }, [turn, board]);
 
-  // Обработка победы
   useEffect(() => {
     if (checkWinner(board, "X")) {
       alert(`Вы выиграли за ${moves} ходов!`);
@@ -57,13 +53,13 @@ const TicTacToe: React.FC = () => {
   };
 
   const handleClick = (i: number, j: number) => {
-    if (board[i][j] || turn !== "X") return; // нельзя ходить на занятую клетку или если сейчас ход компьютера
+    if (board[i][j] || turn !== "X") return;
 
     const newBoard = board.map(row => [...row]);
     newBoard[i][j] = "X";
     setBoard(newBoard);
     setMoves(prev => prev + 1);
-    setTurn("O"); // после хода игрока ходит компьютер
+    setTurn("O");
   };
 
   return (

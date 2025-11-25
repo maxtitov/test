@@ -1,82 +1,83 @@
 type Cell = "X" | "O" | null;
-
 const SIZE = 10;
+const CENTER = (SIZE - 1) / 2;
 const directions = [
   [0, 1], [1, 0], [1, 1], [1, -1]
 ];
 
-const openLineLength = (board: Cell[][], row: number, col: number, player: "X" | "O"): { length: number, openEnds: number } => {
+const checkLine = (board: Cell[][], row: number, col: number, player: "X" | "O") => {
   let maxLen = 0;
-  let maxOpenEnds = 0;
+  let openEnds = 0;
 
   for (const [dx, dy] of directions) {
     let count = 1;
-    let openEnds = 0;
+    let ends = 0;
 
-    // вперед
-    let x = row + dx, y = col + dy;
+    let x = row + dx;
+    let y = col + dy;
     while (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === player) {
       count++;
       x += dx;
       y += dy;
     }
-    if (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === null) openEnds++;
+    if (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === null) ends++;
 
-    // назад
     x = row - dx; y = col - dy;
     while (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === player) {
       count++;
-      x -= dx;
-      y -= dy;
+      x -= dx; y -= dy;
     }
-    if (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === null) openEnds++;
+    if (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === null) ends++;
 
-    if (count > maxLen || (count === maxLen && openEnds > maxOpenEnds)) {
+    if (count > maxLen || (count === maxLen && ends > openEnds)) {
       maxLen = count;
-      maxOpenEnds = openEnds;
+      openEnds = ends;
     }
   }
 
-  return { length: maxLen, openEnds: maxOpenEnds };
+  return { length: maxLen, openEnds };
 };
 
-// AI ход
 export const computerMove = (board: Cell[][]): [number, number] => {
-  let bestScore = -1;
-  let bestMoves: [number, number][] = [];
+  const candidates: { cell: [number, number]; priority: number }[] = [];
 
   for (let i = 0; i < SIZE; i++) {
     for (let j = 0; j < SIZE; j++) {
       if (board[i][j] !== null) continue;
 
-      const myLine = openLineLength(board.map(r => [...r]), i, j, "O");
-      const playerLine = openLineLength(board.map(r => [...r]), i, j, "X");
+      const tempBoard = board.map(r => [...r]);
+      tempBoard[i][j] = "O";
 
-      let score = 0;
+      const myLine = checkLine(tempBoard, i, j, "O");
+      const playerLine = checkLine(board, i, j, "X");
 
-      // 1. Если игрок может выиграть за 1 ход, блокировать обязательно
-      if (playerLine.length >= 4 && playerLine.openEnds > 0) {
-        score += 1000;
-      } else {
-        // 2. Если у игрока есть линия из 3 с открытыми концами
-        if (playerLine.length === 3 && playerLine.openEnds === 2) {
-          // блокировать только если у компьютера нет линии >=4
-          if (myLine.length < 4) {
-            score += 500;
-          }
-        }
-      }
+      let priority = 0;
 
-      score += myLine.length * 10 + myLine.openEnds * 5;
+      if (myLine.length >= 5) priority = 6;
+      else if (playerLine.length >= 4 && playerLine.openEnds > 0) priority = 5;
+      else if (myLine.length === 4 && myLine.openEnds === 2) priority = 4;
+      else if (playerLine.length === 3 && playerLine.openEnds === 2) priority = 3;
+      else if (myLine.length === 3 && myLine.openEnds === 2) priority = 2;
+      else if (playerLine.length === 2 && playerLine.openEnds === 2) priority = 1;
 
-      if (score > bestScore) {
-        bestScore = score;
-        bestMoves = [[i, j]];
-      } else if (score === bestScore) {
-        bestMoves.push([i, j]);
-      }
+      if (priority > 0) candidates.push({ cell: [i, j], priority });
     }
   }
 
-    return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+  let bestMoves: [number, number][] = [];
+
+  if (candidates.length > 0) {
+    const maxPriority = Math.max(...candidates.map(c => c.priority));
+    bestMoves = candidates.filter(c => c.priority === maxPriority).map(c => c.cell);
+  } else {
+    board.forEach((row, i) => row.forEach((cell, j) => { if (!cell) bestMoves.push([i, j]); }));
+  }
+
+  bestMoves.sort((a, b) => {
+    const distA = Math.abs(a[0] - CENTER) + Math.abs(a[1] - CENTER);
+    const distB = Math.abs(b[0] - CENTER) + Math.abs(b[1] - CENTER);
+    return distA - distB;
+  });
+
+  return bestMoves[0];
 };
