@@ -1,21 +1,20 @@
 type Cell = "X" | "O" | null;
 
 const SIZE = 10;
-
 const directions = [
   [0, 1], [1, 0], [1, 1], [1, -1]
 ];
 
-const openLineLength = (board: Cell[][], row: number, col: number, player: "X" | "O"): number => {
+const openLineLength = (board: Cell[][], row: number, col: number, player: "X" | "O"): { length: number, openEnds: number } => {
   let maxLen = 0;
+  let maxOpenEnds = 0;
 
   for (const [dx, dy] of directions) {
     let count = 1;
     let openEnds = 0;
 
     // вперед
-    let x = row + dx;
-    let y = col + dy;
+    let x = row + dx, y = col + dy;
     while (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === player) {
       count++;
       x += dx;
@@ -24,8 +23,7 @@ const openLineLength = (board: Cell[][], row: number, col: number, player: "X" |
     if (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === null) openEnds++;
 
     // назад
-    x = row - dx;
-    y = col - dy;
+    x = row - dx; y = col - dy;
     while (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === player) {
       count++;
       x -= dx;
@@ -33,17 +31,16 @@ const openLineLength = (board: Cell[][], row: number, col: number, player: "X" |
     }
     if (x >= 0 && y >= 0 && x < SIZE && y < SIZE && board[x][y] === null) openEnds++;
 
-    // Если линия заблокирована с одной стороны, то threat уменьшается
-    let effectiveLen = count;
-    if (openEnds === 0) effectiveLen = count / 2; // полностью заблокирована
-    if (openEnds === 1 && count < 5) effectiveLen = count * 0.8; // полузаблокирована, немного меньше вес
-
-    if (effectiveLen > maxLen) maxLen = effectiveLen;
+    if (count > maxLen || (count === maxLen && openEnds > maxOpenEnds)) {
+      maxLen = count;
+      maxOpenEnds = openEnds;
+    }
   }
 
-  return maxLen;
+  return { length: maxLen, openEnds: maxOpenEnds };
 };
 
+// AI ход
 export const computerMove = (board: Cell[][]): [number, number] => {
   let bestScore = -1;
   let bestMoves: [number, number][] = [];
@@ -52,11 +49,25 @@ export const computerMove = (board: Cell[][]): [number, number] => {
     for (let j = 0; j < SIZE; j++) {
       if (board[i][j] !== null) continue;
 
-      const myLen = openLineLength(board.map(r => [...r]), i, j, "O");
-      const playerLen = openLineLength(board.map(r => [...r]), i, j, "X");
+      const myLine = openLineLength(board.map(r => [...r]), i, j, "O");
+      const playerLine = openLineLength(board.map(r => [...r]), i, j, "X");
 
-      // Оценка: развитие своей линии + блокировка игрока
-      const score = myLen * 2 + playerLen * 1.5;
+      let score = 0;
+
+      // 1. Если игрок может выиграть за 1 ход, блокировать обязательно
+      if (playerLine.length >= 4 && playerLine.openEnds > 0) {
+        score += 1000;
+      } else {
+        // 2. Если у игрока есть линия из 3 с открытыми концами
+        if (playerLine.length === 3 && playerLine.openEnds === 2) {
+          // блокировать только если у компьютера нет линии >=4
+          if (myLine.length < 4) {
+            score += 500;
+          }
+        }
+      }
+
+      score += myLine.length * 10 + myLine.openEnds * 5;
 
       if (score > bestScore) {
         bestScore = score;
@@ -67,5 +78,5 @@ export const computerMove = (board: Cell[][]): [number, number] => {
     }
   }
 
-  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+    return bestMoves[Math.floor(Math.random() * bestMoves.length)];
 };
